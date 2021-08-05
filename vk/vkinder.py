@@ -4,7 +4,6 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 from random import randrange
 from datetime import datetime
 import json
-
 from db.worker import DBWorker
 
 
@@ -16,7 +15,7 @@ class VKinder:
 
     CMD_GET_PEOPLE = 10
 
-    CMD_LIKEPHOTO = 20
+    # CMD_LIKEPHOTO = 20
 
     CMD_SETUSERTOKEN = 40
 
@@ -34,14 +33,14 @@ class VKinder:
 
         self.__commands = {
             'set_token': (self.CMD_SETUSERTOKEN, self.__set_user_token),
-            'find_pairs': (self.CMD_GET_PEOPLE, self.__get_pairs),
-            'like': (self.CMD_LIKEPHOTO, self.__like_photo),
+            'find_pairs': (self.CMD_GET_PEOPLE, self.__get_pairs)
         }
+        # 'like': (self.CMD_LIKEPHOTO, self.__like_photo
         self.__db_worker = DBWorker()
 
     def __set_user_token(self, **kwargs) -> list:
         self.__user_token = kwargs['params'][0]
-        print(self.__user_token)
+        # print(self.__user_token)
         self.vk_requester = vk_api.VkApi(token=self.__user_token).get_api()
         return [{'msg': 'Token установлен'}]
 
@@ -172,19 +171,22 @@ class VKinder:
             ]
         return self.__commands[kwargs['command']][1](**kwargs)
 
-    def __like_photo(self, **kwargs):
-        if kwargs.get('payload'):
-            payload = json.loads(kwargs['payload'])
-            owner_id, item_id = payload['attachment_id'].split('_')
-            self.vk_requester.likes.add(owner_id=owner_id, item_id=item_id)
-            return [{'msg': 'Liked!'}]
-        return [{'msg': 'Неверный формат комманды like'}]
+    # def __like_photo(self, **kwargs):
+    #     if kwargs.get('payload'):
+    #         payload = json.loads(kwargs['payload'])
+    #         owner_id, item_id = payload['attachment_id'].split('_')
+    #         # obj_type = 'photo'
+    #         self.vk_requester.likes.add(type='photo', owner_id=owner_id, item_id=item_id)
+    #         return [{'msg': 'Liked!'}]
+    #     return [{'msg': 'Неверный формат комманды like'}]
 
     def start(self):
         for event in self.__longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW and event.to_me:
                 command, params = self.__read_command(event.text)
-                command_response_list = [{'msg': 'Неверный формат команды.'}]
+                command_response_list = [{'msg': 'Неверный формат команды! \n-------------\nДоступные команды: '
+                                                 '\nset_token <TOKEN> - '
+                                                 'установить токен \nfind_pairs - найти пару \n'}]
                 if command in self.__commands.keys():
 
                     if self.__commands[command][0] == self.CMD_GET_PEOPLE:
@@ -235,8 +237,7 @@ class VKinder:
                                     {
                                         "action": {
                                             "type": "text",
-                                            "payload": "{\"attachment_id\": \"" + photo['attachment_id'] + "\"}",
-                                            "label": "like"
+                                            "payload": "{\"attachment_id\": \"" + photo['attachment_id'] + "\"}"
                                         },
                                         "color": "primary"
                                     },
@@ -245,8 +246,7 @@ class VKinder:
                             self.__vk_bot.method(self.__EP_SEND_MESSAGE,
                                                  {'user_id': event.user_id,
                                                   'message': '-',
-                                                  'random_id': randrange(10 ** 7),
-                                                  'keyboard': keyboard
+                                                  'random_id': randrange(10 ** 7)
                                                   })
 
                     self.__vk_bot.method(self.__EP_SEND_MESSAGE,
